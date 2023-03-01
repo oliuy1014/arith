@@ -13,31 +13,29 @@ double diff_score(Pnm_ppm img_1, Pnm_ppm img_2, A2Methods_T methods);
 void set_files(FILE **fp_1, FILE **fp_2, char *filename_1, char *filename_2);
 int min(int a, int b);
 void trim_file(A2Methods_UArray2 pixmap, int w, int h, A2Methods_T methods);
+void check_dimensions(Pnm_ppm img_1, Pnm_ppm img_2);
 
 int main(int argc, char *argv[])
 {
-        /* Checking args */
         if (argc != 3) {
-                fprintf(stderr, "Invalid number of arguments.");
+                fprintf(stderr, "Invalid number of arguments.\n");
                 usage(argv[0]);
         }
         if ((strcmp(argv[1], "-") == 0 && (strcmp(argv[2], "-") == 0))) {
                 fprintf(stderr, "At most one input filename can be stdin.\n");
                 usage(argv[0]);
         }
-
         FILE *fp_1 = NULL;
         FILE *fp_2 = NULL;
         set_files(&fp_1, &fp_2, argv[1], argv[2]);
-
         A2Methods_T methods = uarray2_methods_plain;
         Pnm_ppm img_1 = Pnm_ppmread(fp_1, methods);
         Pnm_ppm img_2 = Pnm_ppmread(fp_2, methods);
         fclose(fp_1);
         fclose(fp_2);
-        /* TODO: check if width or height diff greater than 1 */
+        check_dimensions(img_1, img_2);
         double diff = diff_score(img_1, img_2, methods);
-        printf("diff: %f\n", diff);
+        printf("%f\n", diff);
         Pnm_ppmfree(&img_1);
         Pnm_ppmfree(&img_2);
         return 0;
@@ -90,7 +88,6 @@ double diff_score(Pnm_ppm img_1, Pnm_ppm img_2, A2Methods_T methods)
                 }
         }
         double ret = sqrt(diff / (3 * width * height));
-        fprintf(stderr, "diff: %f\n", ret);
         return ret;
 }
 
@@ -111,4 +108,18 @@ void set_files(FILE **fp_1, FILE **fp_2, char *filename_1, char *filename_2)
 int min(int a, int b) 
 {
         return a < b ? a : b;
+}
+
+void check_dimensions(Pnm_ppm img_1, Pnm_ppm img_2)
+{
+        int width_diff = abs((int) img_1->width - 
+                             (int) img_2->width);
+        int height_diff = abs((int) img_1->height - 
+                              (int) img_2->height);
+        if (width_diff > 1 || height_diff > 1) {
+                fprintf(stderr, "Width or height of files differ"
+                                " by more than 1 pixel\n");
+                printf("1.0\n");
+                exit(0);
+        }
 }
