@@ -61,6 +61,10 @@ all: ppmtrans a2test timing_test
 
 ## Linking step (.o -> executable program)
 
+40image: 40image.o compress40.o int_vs_float.o a2blocked.o \
+	 uarray2b.o uarray2.o
+	 $(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+
 a2test: a2test.o uarray2b.o uarray2.o a2plain.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
