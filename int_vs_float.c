@@ -6,7 +6,8 @@
 #include "a2blocked.h"
 #include "assert.h"
 
-#define DENOMINATOR 255
+#define DENOMINATOR_C 255
+#define DENOMINATOR_D 1023
 
 typedef struct RGB_float {
         float red, blue, green;
@@ -45,7 +46,7 @@ void i_to_f_apply(int col, int row, A2Methods_UArray2 a2,
         /* read in array from cl */
         A2Methods_UArray2 a2_f = (A2Methods_UArray2) cl;
         assert(a2_f != NULL);
-        float denom = (float) DENOMINATOR;
+        float denom = (float) DENOMINATOR_C;
         A2Methods_T methods = uarray2_methods_blocked;
 
         /* initialize struct for rgb float data */
@@ -58,7 +59,10 @@ void i_to_f_apply(int col, int row, A2Methods_UArray2 a2,
         float_data->green = (float)(rgb->green) / denom;
         float_data->blue = (float)(rgb->blue) / denom;
         float_data->red = (float)(rgb->red) / denom;
-
+        // fprintf(stderr, "r: (%f, %d), g: (%f, %d), b: (%f, %d)\n", 
+        //                  float_data->red, rgb->red,
+        //                  float_data->green, rgb->green,
+        //                  float_data->blue, rgb->blue);
         *(RGB_float) methods->at(a2_f, col, row) = *float_data;
         free(float_data);
 }
@@ -91,9 +95,9 @@ void f_to_i_apply(int col, int row, A2Methods_UArray2 a2_f,
         assert(float_data != NULL);
         Pnm_rgb int_data = malloc(sizeof(struct Pnm_rgb));
         assert(int_data != NULL);
-        int_data->red   = (unsigned)roundf(float_data->red   * DENOMINATOR);
-        int_data->green = (unsigned)roundf(float_data->green * DENOMINATOR);
-        int_data->blue  = (unsigned)roundf(float_data->blue  * DENOMINATOR);
+        int_data->red   = (unsigned)roundf(float_data->red   * DENOMINATOR_D);
+        int_data->green = (unsigned)roundf(float_data->green * DENOMINATOR_D);
+        int_data->blue  = (unsigned)roundf(float_data->blue  * DENOMINATOR_D);
         *(Pnm_rgb) methods->at(a2_i, col, row) = *int_data;
         free(int_data);
 }

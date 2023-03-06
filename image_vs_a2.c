@@ -2,7 +2,8 @@
 #include "assert.h"
 #include <stdlib.h>
 
-#define DENOMINATOR 255
+#define DENOMINATOR_C 255
+#define DENOMINATOR_D 1023
 
 void copy_elem(int col, int row, A2Methods_UArray2 a2, void *elem, void *cl);
 A2Methods_UArray2 trim(A2Methods_UArray2 a2, int width, int height);
@@ -27,7 +28,7 @@ void a2_to_image(A2Methods_UArray2 a2_i)
         final_image->pixels = (A2Methods_UArray2) a2_i;
         final_image->width = methods->width(a2_i);
         final_image->height = methods->height(a2_i);
-        final_image->denominator = DENOMINATOR;
+        final_image->denominator = DENOMINATOR_D;
         final_image->methods = methods;
         Pnm_ppmwrite(stdout, final_image);
         Pnm_ppmfree(&final_image);
