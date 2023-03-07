@@ -9,6 +9,10 @@
 
 #define NUM_CELLS 4
 
+typedef struct RGB_float {
+        float red, blue, green;
+} *RGB_float;
+
 typedef struct Vcs {
         float y, pb, pr;
 } *Vcs_T;
@@ -60,9 +64,24 @@ A2Methods_UArray2 cells_to_blocks(A2Methods_UArray2 a2_vcs)
         cl->arr = a2_b;
 
         methods->map_block_major(a2_vcs, c_to_b_apply, cl);
-        // debug_print_(a2_vcs);
-        // quick_debug_print_(cl->arr);
-        // methods->free(&a2_vcs);
+        /* print vcs data */
+        // for (int row = 0; row < height; row++) {
+        //         for (int col = 0; col < width; col++) {
+        //                 Vcs_T elem = (Vcs_T) methods->at(a2_vcs, col, row);
+        //                 printf("y: %f, pb: %f, pr: %f\n", 
+        //                 elem->y, elem->pb, elem->pr);
+        //         }
+        // }
+        /* print block data */
+        // for (int col = 0; col < width / 2; col++) {
+        //         for (int row = 0; row < height / 2; row++) {
+        //                 Block_T elem = (Block_T) methods->at(a2_b, col, row);
+        //                 for (int i = 0; i < 4; i++) {
+        //                         printf("a: %d, b: %d, c: %d, d: %d, pb: %d, pr: %d\n", 
+        //                         elem->a, elem->b, elem->c, elem->d, elem->pb_q, elem->pr_q);
+        //                 }
+        //         }
+        // }
         methods->free(&a2_vcs);
         free(cl);
 
@@ -97,7 +116,15 @@ void c_to_b_apply(int col, int row, A2Methods_UArray2 a2_vcs,
         Vcs_T vcs_data = (Vcs_T) elem;
         assert(vcs_data != NULL);
         cl_T CL = (cl_T) cl;
+        /* Switching from col major within blocks to row major*/
         int idx = 2 * (row % 2) + (col % 2);
+        // fprintf(stderr, "index: %d, y: %f, pb: %f, pr: %f\n",
+                // idx, vcs_data->y, vcs_data->pb, vcs_data->pr);
+        
+        
+        // printf("y: %f, pb: %f, pr: %f\n", 
+        // vcs_data->y, vcs_data->pb, vcs_data->pr);
+       
         (CL->cells)[idx] = vcs_data;
         if ((col % 2 == 1) && (row % 2 == 1)) {
                 Block_T block_data = malloc(sizeof(struct Block_avg));
@@ -125,6 +152,39 @@ A2Methods_UArray2 blocks_to_cells(A2Methods_UArray2 a2_b)
                                               sizeof(struct Vcs));
         assert(a2_vcs != NULL);
         methods->map_block_major(a2_b, b_to_c_apply, a2_vcs);
+        /* print block data */
+        // for (int row = 0; row < width; row++) {
+        //         for (int col = 0; col < height; col++) {
+        //                 Block_T elem = (Block_T) methods->at(a2_b, col, row);
+        //                 for (int i = 0; i < 4; i++) {
+        //                         printf("a: %d, b: %d, c: %d, d: %d, pb: %d, pr: %d\n", 
+        //                         elem->a, elem->b, elem->c, elem->d, elem->pb_q, elem->pr_q);
+        //                 }
+        //         }
+        // }
+        /* print vcs data row-block-major */
+        // for (int blk_r = 0; blk_r < height; blk_r += 2) {
+        //         for (int blk_c = 0; blk_c < width; blk_c += 2) {
+        //                 for (int i = 0; i < 2; i++) {
+        //                         for (int j = 0; j < 2; j++) {
+        //                                 Vcs_T elem = (Vcs_T) methods->at(a2_vcs, blk_c + j, blk_r + i);
+        //                                 printf("y: %f, pb: %f, pr: %f\n", 
+        //                                 elem->y, elem->pb, elem->pr);
+        //                         }
+                                
+        //                 }
+                        
+        // }
+        // }
+        /* print vcs data row major */
+        // for (int row = 0; row < height; row++) {
+        //         for (int col = 0; col < width; col++) {
+        //                 Vcs_T elem = (Vcs_T) methods->at(a2_vcs, col, row);
+        //                 printf("y: %f, pb: %f, pr: %f\n", 
+        //                 elem->y, elem->pb, elem->pr);
+        //         }
+        // }
+        
         methods->free(&a2_b);
         return a2_vcs;
 }
@@ -165,9 +225,8 @@ void b_to_c_apply(int col, int row, A2Methods_UArray2 a2_b,
         vcs_4->pb = Arith40_chroma_of_index(block_data->pb_q);
         vcs_4->pr = Arith40_chroma_of_index(block_data->pr_q);
         Vcs_T vcs_arr[] = {vcs_1, vcs_2, vcs_3, vcs_4};
-
         for (int i = 0; i < NUM_CELLS; i++) {
-                int c = col * 2 + i % 2; 
+                int c = col * 2 + i % 2;
                 int r = row * 2 + i / 2;
                 *(Vcs_T) methods->at(a2_vcs, c, r) = *vcs_arr[i];
                 free(&(*vcs_arr[i]));
@@ -176,31 +235,46 @@ void b_to_c_apply(int col, int row, A2Methods_UArray2 a2_b,
 
 float get_y1(Block_T block_data)
 {
-        
-        float y = block_data->a - block_data->b -
-                   block_data->c + block_data->d;
-        return y / 511;
+        float a = (float) block_data->a;
+        float b = (float) block_data->b;
+        float c = (float) block_data->c;
+        float d = (float) block_data->d;
+        float y = (a/ 511) - (b / 50) -
+                  (c / 50) + (d / 50);
+        return y;
 }
 
 float get_y2(Block_T block_data)
 {
-        float y = block_data->a - block_data->b +
-                   block_data->c - block_data->d;
-        return y / 511;
+        float a = (float) block_data->a;
+        float b = (float) block_data->b;
+        float c = (float) block_data->c;
+        float d = (float) block_data->d;
+        float y = (a / 511) - (b / 50) +
+                  (c / 50) - (d / 50);
+        return y;
 }
 
 float get_y3(Block_T block_data)
 {
-        float y = block_data->a + block_data->b -
-                   block_data->c - block_data->d;
-        return y / 511;
+        float a = (float) block_data->a;
+        float b = (float) block_data->b;
+        float c = (float) block_data->c;
+        float d = (float) block_data->d;
+        float y = (a / 511) + (b / 50) -
+                  ( c / 50) - (d / 50);
+        return y;
 }
 
 float get_y4(Block_T block_data)
 {
-        float y = block_data->a + block_data->b +
-                   block_data->c + block_data->d;
-        return y / 511;
+        float a = (float) block_data->a;
+        float b = (float) block_data->b;
+        float c = (float) block_data->c;
+        float d = (float) block_data->d;
+        float y = (a / 511) + (b / 50) +
+                  (c / 50) + (d / 50);
+        return y;
 }
 
 /***************************vcs to block funcs below***********************************/
@@ -230,6 +304,7 @@ int get_a(Vcs_T arr[])
         float sum = 0;
         for (int i = 0; i < NUM_CELLS; i++) {
                 sum += arr[i]->y;
+                printf("y%d: %f  ", i, arr[i]->y);
         }
         float a = sum / NUM_CELLS;
         int a_q = (int)roundf(511 * a);
@@ -239,7 +314,7 @@ int get_a(Vcs_T arr[])
 int get_b(Vcs_T arr[])
 {
         float sum = 0;
-        sum = sum - arr[0]->y - arr[1]->y + arr[2]->y + arr[3]->y;
+        sum = -arr[0]->y - arr[1]->y + arr[2]->y + arr[3]->y;
         float b = clamp((sum / NUM_CELLS), 0.3);
         int b_q = (int)roundf(50 * b);
         return b_q;

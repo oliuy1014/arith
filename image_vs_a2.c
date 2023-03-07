@@ -3,10 +3,10 @@
 #include <stdlib.h>
 
 #define DENOMINATOR_C 255
-#define DENOMINATOR_D 1023
+#define DENOMINATOR_D 255
 
 void copy_elem(int col, int row, A2Methods_UArray2 a2, void *elem, void *cl);
-A2Methods_UArray2 trim(A2Methods_UArray2 a2, int width, int height);
+
 A2Methods_UArray2 image_to_a2(FILE *fp)
 {
         assert(fp != NULL);
@@ -17,6 +17,14 @@ A2Methods_UArray2 image_to_a2(FILE *fp)
         int even_w = width - (width % 2);
         int even_h = height - (height % 2);
         A2Methods_UArray2 a2_i = trim(image->pixels, even_w, even_h);
+        // for (int row = 0; row < even_h; row++) {
+        //         for (int col = 0; col < even_w; col++) {
+        //                 Pnm_rgb elem = (Pnm_rgb) methods->at(a2_i, col, row);
+        //                 printf("r: %d g: %d b: %d\n", 
+        //                 elem->red, elem->green, elem->blue);
+        //         }
+        // }
+        
         Pnm_ppmfree(&image);
         return a2_i;
 }
@@ -30,7 +38,14 @@ void a2_to_image(A2Methods_UArray2 a2_i)
         final_image->height = methods->height(a2_i);
         final_image->denominator = DENOMINATOR_D;
         final_image->methods = methods;
-        Pnm_ppmwrite(stdout, final_image);
+        // for (int row = 0; row < methods->height(a2_i); row++) {
+        //         for (int col = 0; col < methods->width(a2_i); col++) {
+        //                 Pnm_rgb elem = (Pnm_rgb) methods->at(a2_i, col, row);
+        //                 printf("r: %d, g: %d, b: %d\n", 
+        //                 elem->red, elem->green, elem->blue);
+        //         }
+        // }
+        // Pnm_ppmwrite(stdout, final_image);
         Pnm_ppmfree(&final_image);
 }
 

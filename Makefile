@@ -81,7 +81,7 @@ ppmtrans: ppmtrans.o cputiming.o uarray2b.o uarray2.o a2plain.o a2blocked.o \
 ppmdiff: ppmdiff.o uarray2.o a2plain.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
-make_small_ppm: make_small_ppm.o uarray2b.o uarray2.o a2blocked.o
+make_small_ppm: make_small_ppm.o uarray2b.o uarray2.o a2blocked.o image_vs_a2.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 clean:

@@ -17,8 +17,7 @@ void f_to_v_apply(int col, int row, A2Methods_UArray2 a2,
 void v_to_f_apply(int col, int row, A2Methods_UArray2 a2_vcs, 
                   void *elem, void *cl);
 void debug_vcs(int col, int row, A2Methods_UArray2 a2, void *elem, void *cl);
-/* TODO: ADD TRIM TO FIRST MODULE */
-/* REMOVE "DESTINATION"*/
+
 A2Methods_UArray2 float_to_vcs(A2Methods_UArray2 a2_f)
 {
         assert(a2_f != NULL);
@@ -32,6 +31,22 @@ A2Methods_UArray2 float_to_vcs(A2Methods_UArray2 a2_f)
                                                           sizeof(struct Vcs),
                                                                   BLOCKSIZE);
         methods->map_block_major(a2_f, f_to_v_apply, a2_vcs);
+        /* print float rgbs */
+        // for (int row = 0; row < height; row++) {
+        //         for (int col = 0; col < width; col++) {
+        //                 RGB_float elem = (RGB_float) methods->at(a2_f, col, row);
+        //                 printf("r: %f, g: %f, b: %f\n", 
+        //                 elem->red, elem->green, elem->blue);
+        //         }
+        // }
+        /* print vcs data */
+        // for (int row = 0; row < height; row++) {
+        //         for (int col = 0; col < width; col++) {
+        //                 Vcs_T elem = (Vcs_T) methods->at(a2_vcs, col, row);
+        //                 printf("y: %f, pb: %f, pr: %f\n", 
+        //                 elem->y, elem->pb, elem->pr);
+        //         }
+        // }
         methods->free(&a2_f);
         return a2_vcs;
 }
@@ -66,7 +81,6 @@ void f_to_v_apply(int col, int row, A2Methods_UArray2 a2,
         vcs_data->pr =  0.5       * float_data->red   -
                         0.418688  * float_data->green -
                         0.081312  * float_data->blue;
-
         *(Vcs_T) methods->at(a2_vcs, col, row) = *vcs_data;
         free(vcs_data);
 }
@@ -96,6 +110,22 @@ A2Methods_UArray2 vcs_to_float(A2Methods_UArray2 a2_vcs)
         int height = methods->height(a2_vcs);
         A2Methods_UArray2 a2_f = methods->new(width, height, sizeof(struct RGB_float));
         methods->map_block_major(a2_vcs, v_to_f_apply, a2_f);
+        /* print vcs data */
+        // for (int row = 0; row < height; row++) {
+        //         for (int col = 0; col < width; col++) {
+        //                 Vcs_T elem = (Vcs_T) methods->at(a2_vcs, col, row);
+        //                 printf("y: %f, pb: %f, pr: %f\n", 
+        //                 elem->y, elem->pb, elem->pr);
+        //         }
+        // }
+        /* print float data */
+        // for (int row = 0; row < height; row++) {
+        //         for (int col = 0; col < width; col++) {
+        //                 RGB_float elem = (RGB_float) methods->at(a2_f, col, row);
+        //                 printf("r: %f, b: %f, g: %f\n", 
+        //                 elem->red, elem->green, elem->blue);
+        //         }
+        // }
         methods->free(&a2_vcs);
         return a2_f;
 }
