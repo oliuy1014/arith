@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "a2blocked.h"
+#include "a2plain.h"
 #include "pnm.h"
 
 A2Methods_UArray2 image_to_a2(FILE *image);

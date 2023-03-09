@@ -61,8 +61,8 @@ all: ppmtrans a2test timing_test
 
 ## Linking step (.o -> executable program)
 
-40image: 40image.o compress40.o float_vs_vcs.o int_vs_float.o image_vs_a2.o \
-	 cells_vs_blocks.o uarray2b.o uarray2.o a2blocked.o
+40image: 40image.o compress40.o image_vs_a2.o rgb_vs_vcs.o cells_vs_blocks.o \
+	 uarray2b.o uarray2.o a2plain.o a2blocked.o blk_vs_cw.o bitpack.o
 	 $(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 a2test: a2test.o uarray2b.o uarray2.o a2plain.o
@@ -82,6 +82,12 @@ ppmdiff: ppmdiff.o uarray2.o a2plain.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 make_small_ppm: make_small_ppm.o uarray2b.o uarray2.o a2blocked.o image_vs_a2.o
+	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+
+test_bitpack: test_bitpack.o bitpack.o
+	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+
+blk_vs_cw_test: blk_vs_cw_test.o blk_vs_cw.o 
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 clean:

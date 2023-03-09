@@ -5,27 +5,21 @@
 #include "cells_vs_blocks.h"
 #include "seq.h"
 #include "arith40.h"
+#include "structs_and_constants.h"
 
 
 #define NUM_CELLS 4
-
-typedef struct RGB_float {
-        float red, blue, green;
-} *RGB_float;
-
-typedef struct Vcs {
-        float y, pb, pr;
-} *Vcs_T;
-
-typedef struct Block_avg {
-        unsigned a, pb_q, pr_q;
-        int b, c, d;
-} *Block_T;
+#define BCD_LIM 0.3
+// #define A_BITS pow(2, A_W) - 1
+// #define BCD_BITS roundf((pow(2, (BCD_W - 1)) - 1) / BCD_LIM)
+#define A_BITS 511
+#define BCD_BITS 50
 
 typedef struct closure {
         A2Methods_UArray2 arr;
         Vcs_T cells[NUM_CELLS];
 } *cl_T;
+
 void c_to_b_apply(int col, int row, A2Methods_UArray2 a2_vcs, 
                   void *elem, void *cl);
 
@@ -47,62 +41,27 @@ int get_a(Vcs_T arr[]);
 int get_b(Vcs_T arr[]);
 int get_c(Vcs_T arr[]);
 int get_d(Vcs_T arr[]);
-float clamp(float input, float pos_limit);
+float clamp(float input, float max, float min);
 float (*get_yp[4])(Block_T block_data);
 
 A2Methods_UArray2 cells_to_blocks(A2Methods_UArray2 a2_vcs)
 {
         assert(a2_vcs != NULL);
-        const A2Methods_T methods = uarray2_methods_blocked;
-        int width = methods->width(a2_vcs);
-        int height = methods->height(a2_vcs);
-        A2Methods_UArray2 a2_b = methods->new(width / 2, height / 2,
+        // fprintf(stderr, "A: %f, BCD: %f\n", A_BITS, BCD_BITS);
+        int width = METHODS_B->width(a2_vcs);
+        int height = METHODS_B->height(a2_vcs);
+        A2Methods_UArray2 a2_b = METHODS_P->new(width / 2, height / 2,
                                               sizeof(struct Block_avg));
         assert(a2_b != NULL);
         cl_T cl = malloc(sizeof(struct closure));
         assert(cl != NULL);
         cl->arr = a2_b;
-
-        methods->map_block_major(a2_vcs, c_to_b_apply, cl);
-        /* print vcs data */
-        // for (int row = 0; row < height; row++) {
-        //         for (int col = 0; col < width; col++) {
-        //                 Vcs_T elem = (Vcs_T) methods->at(a2_vcs, col, row);
-        //                 printf("y: %f, pb: %f, pr: %f\n", 
-        //                 elem->y, elem->pb, elem->pr);
-        //         }
-        // }
-        /* print block data */
-        // for (int col = 0; col < width / 2; col++) {
-        //         for (int row = 0; row < height / 2; row++) {
-        //                 Block_T elem = (Block_T) methods->at(a2_b, col, row);
-        //                 for (int i = 0; i < 4; i++) {
-        //                         printf("a: %d, b: %d, c: %d, d: %d, pb: %d, pr: %d\n", 
-        //                         elem->a, elem->b, elem->c, elem->d, elem->pb_q, elem->pr_q);
-        //                 }
-        //         }
-        // }
-        methods->free(&a2_vcs);
+        METHODS_B->map_default(a2_vcs, c_to_b_apply, cl);
+        METHODS_B->free(&a2_vcs);
+        // fprintf(stderr, "A: %d, BCD: %d\n", A_BITS, BCD_BITS);
         free(cl);
-
         return a2_b;
 }
-
-
-// void quick_debug_print_(A2Methods_UArray2 a2)
-// {
-//         A2Methods_T methods = uarray2_methods_blocked;
-//         int width = methods->width(a2);
-//         int height = methods->height(a2);
-
-//         for (int r = 0; r < height; r++) {
-//                 for (int c = 0; c < width; c++) {
-//                         Block_T elem = (Block_T) methods->at(a2, c, r);
-//                         printf("%f ", elem->y);
-//                 }
-//                 printf("\n\n");
-//         }
-// }
 
 void c_to_b_apply(int col, int row, A2Methods_UArray2 a2_vcs, 
                   void *elem, void *cl)
@@ -112,19 +71,11 @@ void c_to_b_apply(int col, int row, A2Methods_UArray2 a2_vcs,
         assert(cl != NULL);
         A2Methods_UArray2 a2_b = (A2Methods_UArray2) cl;
         assert(a2_b != NULL);
-        A2Methods_T methods = uarray2_methods_blocked;
         Vcs_T vcs_data = (Vcs_T) elem;
         assert(vcs_data != NULL);
         cl_T CL = (cl_T) cl;
         /* Switching from col major within blocks to row major*/
         int idx = 2 * (row % 2) + (col % 2);
-        // fprintf(stderr, "index: %d, y: %f, pb: %f, pr: %f\n",
-                // idx, vcs_data->y, vcs_data->pb, vcs_data->pr);
-        
-        
-        // printf("y: %f, pb: %f, pr: %f\n", 
-        // vcs_data->y, vcs_data->pb, vcs_data->pr);
-       
         (CL->cells)[idx] = vcs_data;
         if ((col % 2 == 1) && (row % 2 == 1)) {
                 Block_T block_data = malloc(sizeof(struct Block_avg));
@@ -135,7 +86,7 @@ void c_to_b_apply(int col, int row, A2Methods_UArray2 a2_vcs,
                 block_data->d = get_d(CL->cells);
                 block_data->pb_q = get_pb_q(CL->cells);
                 block_data->pr_q = get_pr_q(CL->cells);
-                *(Block_T) methods->at(CL->arr, (col + 1) / 2 - 1,
+                *(Block_T) METHODS_P->at(CL->arr, (col + 1) / 2 - 1,
                                        (row + 1) / 2 - 1) = 
                                        *block_data;
                 free(block_data);
@@ -145,47 +96,13 @@ void c_to_b_apply(int col, int row, A2Methods_UArray2 a2_vcs,
 A2Methods_UArray2 blocks_to_cells(A2Methods_UArray2 a2_b) 
 {
         assert(a2_b != NULL);
-        const A2Methods_T methods = uarray2_methods_blocked;
-        int width = methods->width(a2_b);
-        int height = methods->height(a2_b);
-        A2Methods_UArray2 a2_vcs = methods->new(width * 2, height * 2,
+        int width = METHODS_P->width(a2_b);
+        int height = METHODS_P->height(a2_b);
+        A2Methods_UArray2 a2_vcs = METHODS_P->new(width * 2, height * 2,
                                               sizeof(struct Vcs));
         assert(a2_vcs != NULL);
-        methods->map_block_major(a2_b, b_to_c_apply, a2_vcs);
-        /* print block data */
-        // for (int row = 0; row < width; row++) {
-        //         for (int col = 0; col < height; col++) {
-        //                 Block_T elem = (Block_T) methods->at(a2_b, col, row);
-        //                 for (int i = 0; i < 4; i++) {
-        //                         printf("a: %d, b: %d, c: %d, d: %d, pb: %d, pr: %d\n", 
-        //                         elem->a, elem->b, elem->c, elem->d, elem->pb_q, elem->pr_q);
-        //                 }
-        //         }
-        // }
-        /* print vcs data row-block-major */
-        // for (int blk_r = 0; blk_r < height; blk_r += 2) {
-        //         for (int blk_c = 0; blk_c < width; blk_c += 2) {
-        //                 for (int i = 0; i < 2; i++) {
-        //                         for (int j = 0; j < 2; j++) {
-        //                                 Vcs_T elem = (Vcs_T) methods->at(a2_vcs, blk_c + j, blk_r + i);
-        //                                 printf("y: %f, pb: %f, pr: %f\n", 
-        //                                 elem->y, elem->pb, elem->pr);
-        //                         }
-                                
-        //                 }
-                        
-        // }
-        // }
-        /* print vcs data row major */
-        // for (int row = 0; row < height; row++) {
-        //         for (int col = 0; col < width; col++) {
-        //                 Vcs_T elem = (Vcs_T) methods->at(a2_vcs, col, row);
-        //                 printf("y: %f, pb: %f, pr: %f\n", 
-        //                 elem->y, elem->pb, elem->pr);
-        //         }
-        // }
-        
-        methods->free(&a2_b);
+        METHODS_P->map_default(a2_b, b_to_c_apply, a2_vcs);
+        METHODS_P->free(&a2_b);
         return a2_vcs;
 }
 
@@ -195,12 +112,11 @@ void b_to_c_apply(int col, int row, A2Methods_UArray2 a2_b,
         assert(a2_b != NULL);
         assert(elem != NULL);
         assert(cl != NULL);
-        A2Methods_T methods = uarray2_methods_blocked;
         A2Methods_UArray2 a2_vcs = (A2Methods_UArray2) cl;
         assert(a2_vcs != NULL);
 
         Block_T block_data = (Block_T) elem;
-        assert(block_data != NULL);
+        assert((int) roundf(block_data != NULL));
         
         Vcs_T vcs_1 = malloc(sizeof(struct Vcs));
         Vcs_T vcs_2 = malloc(sizeof(struct Vcs));
@@ -228,7 +144,7 @@ void b_to_c_apply(int col, int row, A2Methods_UArray2 a2_b,
         for (int i = 0; i < NUM_CELLS; i++) {
                 int c = col * 2 + i % 2;
                 int r = row * 2 + i / 2;
-                *(Vcs_T) methods->at(a2_vcs, c, r) = *vcs_arr[i];
+                *(Vcs_T) METHODS_P->at(a2_vcs, c, r) = *vcs_arr[i];
                 free(&(*vcs_arr[i]));
         }
 }
@@ -239,9 +155,10 @@ float get_y1(Block_T block_data)
         float b = (float) block_data->b;
         float c = (float) block_data->c;
         float d = (float) block_data->d;
-        float y = (a/ 511) - (b / 50) -
-                  (c / 50) + (d / 50);
-        return y;
+        float y = (a / A_BITS) - (b / BCD_BITS) -
+                  (c / BCD_BITS) + (d / BCD_BITS);
+                // fprintf(stderr, "A: %f, BCD: %f\n", A_BITS, BCD_BITS);
+        return clamp(y, 1.0, 0.0);
 }
 
 float get_y2(Block_T block_data)
@@ -250,9 +167,10 @@ float get_y2(Block_T block_data)
         float b = (float) block_data->b;
         float c = (float) block_data->c;
         float d = (float) block_data->d;
-        float y = (a / 511) - (b / 50) +
-                  (c / 50) - (d / 50);
-        return y;
+        float y = (a / A_BITS) - (b / BCD_BITS) +
+                  (c / BCD_BITS) - (d / BCD_BITS);
+                        //   fprintf(stderr, "A: %f, BCD: %f\n", A_BITS, BCD_BITS);
+        return clamp(y, 1.0, 0.0);
 }
 
 float get_y3(Block_T block_data)
@@ -261,9 +179,10 @@ float get_y3(Block_T block_data)
         float b = (float) block_data->b;
         float c = (float) block_data->c;
         float d = (float) block_data->d;
-        float y = (a / 511) + (b / 50) -
-                  ( c / 50) - (d / 50);
-        return y;
+        float y = (a / A_BITS) + (b / BCD_BITS) -
+                  (c / BCD_BITS) - (d / BCD_BITS);
+                        //   fprintf(stderr, "A: %f, BCD: %f\n", A_BITS, BCD_BITS);
+        return clamp(y, 1.0, 0.0);
 }
 
 float get_y4(Block_T block_data)
@@ -272,9 +191,10 @@ float get_y4(Block_T block_data)
         float b = (float) block_data->b;
         float c = (float) block_data->c;
         float d = (float) block_data->d;
-        float y = (a / 511) + (b / 50) +
-                  (c / 50) + (d / 50);
-        return y;
+        float y = (a / A_BITS) + (b / BCD_BITS) +
+                  (c / BCD_BITS) + (d / BCD_BITS);
+                        //   fprintf(stderr, "A: %f, BCD: %f\n", A_BITS, BCD_BITS);
+        return clamp(y, 1.0, 0.0);
 }
 
 /***************************vcs to block funcs below***********************************/
@@ -304,10 +224,11 @@ int get_a(Vcs_T arr[])
         float sum = 0;
         for (int i = 0; i < NUM_CELLS; i++) {
                 sum += arr[i]->y;
-                printf("y%d: %f  ", i, arr[i]->y);
+                // printf("y%d: %f  ", i, arr[i]->y);
         }
         float a = sum / NUM_CELLS;
-        int a_q = (int)roundf(511 * a);
+        int a_q = (int)roundf(A_BITS * a);
+                // fprintf(stderr, "A: %f, BCD: %f\n", A_BITS, BCD_BITS);
         return a_q;
 }
 
@@ -315,8 +236,10 @@ int get_b(Vcs_T arr[])
 {
         float sum = 0;
         sum = -arr[0]->y - arr[1]->y + arr[2]->y + arr[3]->y;
-        float b = clamp((sum / NUM_CELLS), 0.3);
-        int b_q = (int)roundf(50 * b);
+        float b = clamp((sum / NUM_CELLS), 0.3, -0.3);
+        int b_q = (int)roundf(BCD_BITS * b);
+                // fprintf(stderr, "A: %f, BCD: %f\n", A_BITS, BCD_BITS);
+
         return b_q;
 }
 
@@ -324,8 +247,10 @@ int get_c(Vcs_T arr[])
 {
         float sum = 0;
         sum = sum - arr[0]->y + arr[1]->y - arr[2]->y + arr[3]->y;
-        float c = clamp((sum / NUM_CELLS), 0.3);
-        int c_q = (int)roundf(50 * c);
+        float c = clamp((sum / NUM_CELLS), 0.3, -0.3);
+        int c_q = (int)roundf(BCD_BITS * c);
+                // fprintf(stderr, "A: %f, BCD: %f\n", A_BITS, BCD_BITS);
+
         return c_q;
 }
 
@@ -333,34 +258,16 @@ int get_d(Vcs_T arr[])
 {
         float sum = 0;
         sum = sum + arr[0]->y - arr[1]->y - arr[2]->y + arr[3]->y;
-        float d = clamp((sum / NUM_CELLS), 0.3);
-        int d_q = (int)roundf(50 * d);
+        float d = clamp((sum / NUM_CELLS), 0.3, -0.3);
+        int d_q = (int)roundf(BCD_BITS * d);
+                // fprintf(stderr, "A: %f, BCD: %f\n", A_BITS, BCD_BITS);
+
         return d_q;
 }
 
-float clamp(float input, float pos_limit)
+float clamp(float input, float max, float min)
 {
-        input = (input <= pos_limit) ? input : pos_limit;
-        input = (input >= -pos_limit) ? input : -pos_limit;
+        input = (input <= max) ? input : max;
+        input = (input >= min) ? input : min;
         return input;
-}
-
-void debug_print_(A2Methods_UArray2 a2)
-{
-        A2Methods_T methods = uarray2_methods_blocked;
-        int width = methods->width(a2);
-        int height = methods->height(a2);
-
-        for (int r = 0; r < height; r++) {
-                for (int c = 0; c < width; c++) {
-                        int blk_x = c / 2;
-                        int blk_y = r / 2;
-                        printf("(%d, %d) ", blk_x, blk_y);
-                        Vcs_T elem = (Vcs_T) methods->at(a2, c, r);
-                        printf("y: %f, pb: %f, pr: %f, ",
-                        elem->y, elem->pb, elem->pr);
-                        printf("\n");
-                }
-                printf("\n\n");
-        }
 }
