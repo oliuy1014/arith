@@ -1,6 +1,6 @@
-# Makefile for locality (Comp 40 Assignment 3)
+# Makefile for arith (Comp 40 Assignment 4)
 # 
-# Includes build rules for a2test and ppmtrans.
+# Includes build rules for 40image and ppmdiff.
 #
 # This Makefile is more verbose than necessary.  In each assignment
 # we will simplify the Makefile using more powerful syntax and implicit rules.
@@ -49,8 +49,7 @@ INCLUDES = $(shell echo *.h)
 
 ############### Rules ###############
 
-all: ppmtrans a2test timing_test
-
+all: 40image ppmdiff
 
 ## Compile step (.c files -> .o files)
 
@@ -61,34 +60,14 @@ all: ppmtrans a2test timing_test
 
 ## Linking step (.o -> executable program)
 
-40image: 40image.o compress40.o image_vs_a2.o rgb_vs_vcs.o cells_vs_blocks.o \
-	 uarray2b.o uarray2.o a2plain.o a2blocked.o blk_vs_cw.o bitpack.o
+40image: 40image.o compress40.o image_pixmap_convert.o rgb_vcs_convert.o \
+	 vcs_blockavg_convert.o blockavg_codeword_convert.o \
+	 read_write_codewords.o bitpack.o blockavg_operations.o \
+	 uarray2b.o uarray2.o a2plain.o a2blocked.o
 	 $(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
-
-a2test: a2test.o uarray2b.o uarray2.o a2plain.o
-	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
-
-uarray2b-test: uarray2b-test.o uarray2b.o uarray2.o 
-	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
-
-timing_test: timing_test.o cputiming.o
-	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS) 
-
-ppmtrans: ppmtrans.o cputiming.o uarray2b.o uarray2.o a2plain.o a2blocked.o \
-	  transform_funcs.o
-	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 ppmdiff: ppmdiff.o uarray2.o a2plain.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
-make_small_ppm: make_small_ppm.o uarray2b.o uarray2.o a2blocked.o image_vs_a2.o
-	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
-
-test_bitpack: test_bitpack.o bitpack.o
-	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
-
-blk_vs_cw_test: blk_vs_cw_test.o blk_vs_cw.o 
-	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
-
 clean:
-	rm -f ppmtrans a2test timing_test *.o
+	rm -f 40image *.o

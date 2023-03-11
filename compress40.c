@@ -1,38 +1,71 @@
+/**************************************************************
+ *
+ *                compress40.c 
+ *
+ *      Assignment: Homework 4 -- arith
+ *      Authors: Rivan Mehra (rmehra2), Oliver Uy (ouy01)
+ *      Date: March 9th, 2023
+ *     
+ *      summary:
+ *      TODO
+ *      
+ *
+ **************************************************************/
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include "compress40.h"
-#include "image_vs_a2.h"
-#include "cells_vs_blocks.h"
-#include "rgb_vs_vcs.h"
+#include "image_pixmap_convert.h"
+#include "rgb_vcs_convert.h"
+#include "vcs_blockavg_convert.h"
+#include "blockavg_codeword_convert.h"
+#include "read_write_codewords.h"
 #include "pnm.h"
 #include "a2blocked.h"
 #include "a2plain.h"
-#include "blk_vs_cw.h"
-#include "assert.h"
 
-typedef struct Block_avg {
-        unsigned a, pb_q, pr_q;
-        int b, c, d;
-} *Block_T;
+/**********compress40********************************************************
 
-void debug_print_blocked(A2Methods_UArray2 a2);
-
+ *
+ * Purpose:
+ *      Compresses a given image file, writes compressed file to stdout
+ * Parameters: 
+ *      FILE *input: input file pointer to image
+ * Returns: 
+ *      None
+ * Expects:
+ *      Input file to contain ppm image
+ * Notes:
+ *      None
+ ****************************************************************************/
 void compress40(FILE *input)
 {
-        A2Methods_UArray2 a2_i     = image_to_a2(input);
-        A2Methods_UArray2 a2_vcs   = int_to_vcs(a2_i);
-        A2Methods_UArray2 a2_blks  = cells_to_blocks(a2_vcs);
-        A2Methods_UArray2 a2_cw    = blk_to_cw(a2_blks);
-        assert(a2_cw != NULL);
-        A2Methods_UArray2 a2_blks2 = cw_to_blk(a2_cw);
-        A2Methods_UArray2 a2_vcs2  = blocks_to_cells(a2_blks2);
-        A2Methods_UArray2 a2_i2    = vcs_to_int(a2_vcs2);
-        a2_to_image(a2_i2);
+        A2Methods_UArray2 a2_rgb   = image_to_pixmap(input);
+        A2Methods_UArray2 a2_vcs   = rgb_to_vcs(a2_rgb);
+        A2Methods_UArray2 a2_blks  = vcs_to_blockavg(a2_vcs);
+        A2Methods_UArray2 a2_cw    = blockavg_to_codeword(a2_blks);
+        write_codewords(a2_cw);
 }
 
+/*********decompress40********************************************************
+ *
+ * Purpose:
+ *      Decompresses a given compressed image file, writes decompressed 
+ *      image to stdout
+ * Parameters: 
+ *      FILE *input: input file pointer to compressed image
+ * Returns: 
+ *      None
+ * Expects:
+ *      Input file to contain compressed ppm image with appropriate codewords
+ * Notes:
+ *      None
+ ****************************************************************************/
 void decompress40(FILE *input)
 {
-        (void) input;
-        fprintf(stderr, "decompression not implemented\n");
-        exit(0);
+        A2Methods_UArray2 a2_cw   = read_codewords(input);
+        A2Methods_UArray2 a2_blks = codeword_to_blockavg(a2_cw);
+        A2Methods_UArray2 a2_vcs  = blockavg_to_vcs(a2_blks);
+        A2Methods_UArray2 a2_rgb  = vcs_to_rgb(a2_vcs);
+        pixmap_to_image(a2_rgb);
 }

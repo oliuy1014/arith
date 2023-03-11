@@ -6,7 +6,6 @@
 #include "a2plain.h"
 #include "uarray2.h"
 #include "pnm.h"
-
 void usage(char *progname);
 FILE *open_file(char *filename, char *mode);
 double diff_score(Pnm_ppm img_1, Pnm_ppm img_2, A2Methods_T methods);

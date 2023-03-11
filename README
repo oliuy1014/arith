@@ -1,8 +1,25 @@
-style questions: 
+Authors: Oliver Uy (ouy01) Rivan Mehra (rmehra01)
+Date: March 10, 2023
+Assignment: CS40 Project 4 Arith
 
-- print codeword
-- methods #defined? or const defined? macro?
-- put the math from cells to blocks into a file
-- change mallocs to NEW
-- name modules better
-- contracts and comments
+Architecture:
+- image_pixmap_convert: 
+-- reads pixmap from ppm image, converts pixmap to ppm and writes to stdout
+- rgb_vcs_convert:
+-- converts between rgb values and video color space values (VCS)
+- vcs_blockavg_convert:
+-- converts between block data (a, b, c, d, pb, pr) and VCS
+- blockavg_codeword_convert:
+-- converts between block data and 32-bit codewords
+- read_write_codewords:
+-- writes compressed image codewords to stdout, reads compressed file in
+- bitpack:
+-- interface used to pack integers into fields in a 32-bit codeword
+-- functions to insert, update and retrieve those values
+
+Implemented: We believe all has been implemented correctly :)
+
+Hours spent analyzing: around 5-6
+Hours spent solving problems: around 50-60 O__O
+
+THANK YOU TA'S (Especially Tina, Rohun, Alec, Alan) WE LOVE YOU
